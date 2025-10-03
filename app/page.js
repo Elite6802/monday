@@ -101,9 +101,9 @@ export default function Home() {
                 Ready for the final surprise?
             </h3>
             <button
-                onClick={() => setIsModalOpen(true)}
-                // UPDATED STYLING: Darker background, gold text, and strong shadow
-                className="relative z-10 px-10 py-4 bg-primary-purple text-secondary-gold font-poppins text-xl font-bold rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 hover:shadow-primary-pink/80 animate-pulse-slow"
+                onClick={() => setIsModalOpen(true)} // <-- OPEN HANDLER
+                // NEW STYLING: Gold background, deeper shadow, pulsing animation effect
+                className="relative z-10 px-10 py-4 bg-secondary-gold text-gray-900 font-poppins text-xl font-bold rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 hover:shadow-primary-pink/80 animate-pulse-slow"
             >
                 Unwrap Your Final Gift 🎁
             </button>

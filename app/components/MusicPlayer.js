@@ -1,57 +1,43 @@
 'use client';
 import React, { useRef, useEffect, useState } from 'react';
 
-// This component receives the 'startPlayback' prop from the parent component
-export default function MusicPlayer({ startPlayback = false }) {
+export default function MusicPlayer({ autoPlay = false }) {
   const [isClient, setIsClient] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
   const audioRef = useRef(null);
-
-  // Flag to ensure we don't try to play the song multiple times
-  const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
 
   useEffect(() => {
     // 1. Initial Client Setup
     setIsClient(true);
-
-    // Set up volume and event listener once on mount
     if (audioRef.current) {
-        audioRef.current.volume = 0.4;
-        audioRef.current.loop = false; // <<< CRITICAL: Ensure it only plays once
-
-        // Listen for the song to end (optional)
-        audioRef.current.onended = () => {
-            console.log("Song finished playing.");
-            // You could set state here to show a "Play Again?" button if needed
-        };
+      audioRef.current.volume = 0.4;
     }
-  }, []); // Runs ONLY ONCE on mount
+  }, []);
 
-  // 2. Control Playback based on startPlayback prop
+  // 2. Control Playback based on autoPlay prop
   useEffect(() => {
-    // Only proceed if it's the client side, the audio element exists,
-    // the parent says to start, AND it hasn't played through this effect yet.
-    if (isClient && audioRef.current && startPlayback && !hasPlayedOnce) {
+    if (isClient && audioRef.current && autoPlay && !hasStarted) {
 
-      audioRef.current.play()
-        .then(() => {
-          // Success: Mark as played to prevent future attempts from this effect
-          setHasPlayedOnce(true);
-          console.log("Music started successfully on user click.");
-        })
-        .catch(error => {
-          // This catches errors like the user scrolling causing a re-render
-          // that tries to play, which the browser might block.
-          console.error("Audio playback failed:", error);
+      // FIX: Add a small delay (e.g., 50ms) to ensure the user interaction is fully registered by the browser.
+      const playTimeout = setTimeout(() => {
+        audioRef.current.play().then(() => {
+          setHasStarted(true);
+        }).catch(error => {
+          console.error("Autoplay failed after delay:", error);
+          // If it fails even with a delay, the browser environment is highly restricted.
         });
+      }, 50); // 50 milliseconds delay
+
+      // Cleanup function to clear the timeout if the component unmounts quickly
+      return () => clearTimeout(playTimeout);
     }
-  }, [startPlayback, isClient, hasPlayedOnce]);
+  }, [autoPlay, isClient, hasStarted]);
 
   if (!isClient) {
     return null;
   }
 
   return (
-    // CRITICAL: Remove the 'loop' attribute from the <audio> tag here
-    <audio ref={audioRef} src="/bday.mp3" />
+    <audio ref={audioRef} src="/bday.mp3" loop />
   );
 }
