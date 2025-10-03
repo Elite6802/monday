@@ -1,0 +1,60 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.paused {
+  animation-play-state: paused !important;
+}
+.scroll-locked {
+  /* Prevent scrollbar from appearing */
+  overflow: hidden;
+  /* Crucial: Ensure the body/main element doesn't exceed the viewport height */
+  height: 100vh;
+}
+/* Custom Keyframes for the Pulsing Button Effect */
+@keyframes pulse-slow {
+  0%, 100% {
+    /* Changed from gold (255, 215, 0) to a pink/purple shade (e.g., 236, 72, 153 for primary-pink) */
+    box-shadow: 0 0 0 0 rgba(236, 72, 153, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(236, 72, 153, 0);
+  }
+}
+
+/* Custom Utility Class */
+.animate-pulse-slow {
+  animation: pulse-slow 3s infinite; /* 3 seconds duration for a slow, inviting pulse */
+}
+/* Hides the Next.js Dev Overlay/Logo in the bottom right corner */
+#__next-prerender-indicator {
+    display: none !important;
+}
+
+/* This targets the logo specifically, which sometimes uses a generic tag */
+[data-nextjs-call-to-action-panel] {
+    display: none !important;
+}
