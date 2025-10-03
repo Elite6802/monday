@@ -7,27 +7,37 @@ module.exports = {
   ],
   theme: {
     extend: {
-      // ... (colors)
-      animation: {
-        'gradient': 'gradient 8s linear infinite',
-        // Increased time to 90s for a slow, less distracting scroll
-        'scroll-x': 'scroll-x 2s linear infinite',
-        'scroll-x-reverse': 'scroll-x-reverse 2s linear infinite', // New reverse animation
+      colors: {
+        'primary-pink': '#FF69B4',
+        'secondary-gold': '#FFD700',
+        'primary-purple': '#8A2BE2',
       },
-      keyframes: {
-        gradient: {
-          // ... (keyframe content)
-        },
-        'scroll-x': {
-          '0%': { transform: 'translateX(0%)' }, // Start fully to the left
-          '100%': { transform: 'translateX(-50%)' }, // Scroll exactly half its duplicated width
-        },
-        'scroll-x-reverse': { // New reverse keyframes
-          '0%': { transform: 'translateX(-50%)' }, // Start at the midpoint
-          '100%': { transform: 'translateX(0%)' }, // End fully to the left
-        },
+      fontFamily: {
+        // Ensure these match the imports in your global CSS
+        dancing: ['"Dancing Script"', 'cursive'],
+        poppins: ['Poppins', 'sans-serif'],
+        mono: ['"Space Mono"', 'monospace'],
+      },
+      // === CRITICAL: ADD THIS textShadow BLOCK ===
+      textShadow: {
+        'glow-pink': '0 0 8px #FF69B4, 0 0 20px #FF69B4, 0 0 30px #FF69B4',
+        'glow-gold': '0 0 8px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700',
       },
     },
   },
-  plugins: [],
-}
+  plugins: [
+    // === CRITICAL: ADD THIS PLUGIN FUNCTION ===
+    function ({ addUtilities, theme }) {
+      const newUtilities = {
+        // Define the two classes used in the ImageGallery.js
+        '.text-glow-pink': {
+            textShadow: theme('textShadow.glow-pink'),
+        },
+        '.text-glow-gold': {
+            textShadow: theme('textShadow.glow-gold'),
+        },
+      };
+      addUtilities(newUtilities, ['responsive', 'hover']);
+    },
+  ],
+};

@@ -1,136 +1,193 @@
 'use client';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
-// Note: Removed useState, useEffect, and AnimatePresence as they are no longer needed.
+import { useState, useEffect } from 'react';
 
 // --- CONFIGURATION ---
-const TOTAL_ITEMS = 40;
+// CRITICAL UPDATE: Increased total items to 80 (4 years * 20 photos/year)
+const TOTAL_ITEMS = 80;
 const MEDIA_FOLDER = '/birthday-photos/';
-const VIDEO_INDICES = [23, 37]; // Indices of video files
-const ITEM_WIDTH_PX = 280; // Width of each photo item (w-64 is 256px + margin)
-const SCROLL_DURATION_S = 90; // Scroll speed (90 seconds for a slow, continuous loop)
-// ---------------------
+// NOTE: Adjust VIDEO_INDICES if you have more than two videos now (e.g., [23, 37, 55, 71])
+const VIDEO_INDICES = [12, 36];
+const IMAGE_CHANGE_INTERVAL_MS = 3500;
+const FADE_DURATION_S = 0.8;
 
-// Generate the array of 40 media objects automatically
+// --- 1. PREPARE MEDIA DATA & CATEGORIZATION ---
 const mediaItems = Array.from({ length: TOTAL_ITEMS }, (_, i) => {
   const fileIndex = i + 1;
+  // NOTE: You must update VIDEO_INDICES if you add new video files
   const isVideo = VIDEO_INDICES.includes(fileIndex);
   const extension = isVideo ? 'mp4' : 'jpg';
 
   return {
+    id: fileIndex,
     src: `${MEDIA_FOLDER}${fileIndex}.${extension}`,
     alt: `Our Memory Item ${fileIndex}`,
     isVideo: isVideo,
-    isPriority: fileIndex <= 4, // Prioritize the first few images for faster loading
   };
 });
 
-// 1. Divide media into two halves for two rows
-const ROW_1_ITEMS = mediaItems.slice(0, TOTAL_ITEMS / 2); // Items 1-20
-const ROW_2_ITEMS = mediaItems.slice(TOTAL_ITEMS / 2); // Items 21-40
+// --- 2. CATEGORIZE AND SPLIT IMAGES BY YEAR ---
+// New calculation: 80 total images / 4 years = 20 images per year
+const IMAGES_PER_YEAR = TOTAL_ITEMS / 4; // 20 images
+// Each year is split into two sets (A and B) for the diagonal display
+const IMAGES_PER_YEAR_SET = IMAGES_PER_YEAR / 2; // 10 images per set
 
-// 2. Prepare scrolling arrays (duplicated for seamless loop)
-const scrollingRow1 = [...ROW_1_ITEMS, ...ROW_1_ITEMS];
-const scrollingRow2 = [...ROW_2_ITEMS, ...ROW_2_ITEMS];
+const yearGalleriesData = [
+  {
+    year: '2022',
+    title: 'The Beginning',
+    // Set A (Top-Right): Images 1-10
+    imagesA: mediaItems.slice(0, IMAGES_PER_YEAR_SET),
+    // Set B (Bottom-Left): Images 11-20
+    imagesB: mediaItems.slice(IMAGES_PER_YEAR_SET, IMAGES_PER_YEAR_SET * 2),
+  },
+  {
+    year: '2023',
+    title: 'Flourishing Bonds',
+    // Set A: Images 21-30
+    imagesA: mediaItems.slice(IMAGES_PER_YEAR_SET * 2, IMAGES_PER_YEAR_SET * 3),
+    // Set B: Images 31-40
+    imagesB: mediaItems.slice(IMAGES_PER_YEAR_SET * 3, IMAGES_PER_YEAR_SET * 4),
+  },
+  {
+    year: '2024',
+    title: 'Golden Chapters',
+    // Set A: Images 41-50
+    imagesA: mediaItems.slice(IMAGES_PER_YEAR_SET * 4, IMAGES_PER_YEAR_SET * 5),
+    // Set B: Images 51-60
+    imagesB: mediaItems.slice(IMAGES_PER_YEAR_SET * 5, IMAGES_PER_YEAR_SET * 6),
+  },
+  {
+    year: '2025',
+    title: 'Radiant Horizons',
+    // Set A: Images 61-70
+    imagesA: mediaItems.slice(IMAGES_PER_YEAR_SET * 6, IMAGES_PER_YEAR_SET * 7),
+    // Set B: Images 71-80
+    imagesB: mediaItems.slice(IMAGES_PER_YEAR_SET * 7, TOTAL_ITEMS),
+  },
+];
 
-// The total width of the content when duplicated (40 items * 2)
-const TOTAL_CONTENT_WIDTH = TOTAL_ITEMS * ITEM_WIDTH_PX;
-// The distance the animation needs to travel to loop (half the total width)
-const SCROLL_DISTANCE = -TOTAL_CONTENT_WIDTH;
+// --- 3. REUSABLE YearGallery COMPONENT (No Change to Logic/Styling) ---
+const YearGallery = ({ year, title, imagesA, imagesB }) => {
+  const [indexA, setIndexA] = useState(0);
+  const [indexB, setIndexB] = useState(0);
 
-// --- Component Definition ---
-export default function ImageGallery() {
+  useEffect(() => {
+    // --- Timer for Set A (Top-Right Image) ---
+    const intervalA = setInterval(() => {
+      setIndexA((prevIndex) => (prevIndex + 1) % imagesA.length);
+    }, IMAGE_CHANGE_INTERVAL_MS);
 
-  const renderMediaItem = (media, index) => (
-    <div
-      key={index} // Use index as key here, as item content doesn't change
-      className="relative inline-block w-64 h-64 mx-2 overflow-hidden rounded-xl shadow-lg cursor-pointer transition-transform duration-300 hover:scale-[1.02] group"
-      style={{ minWidth: '16rem' }} // Ensure a fixed width to stabilize scroll calculation
-    >
-      {media.isVideo ? (
-        <video
-          src={media.src}
-          alt={media.alt}
-          title={media.alt}
-          width={500}
-          height={500}
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover"
-        />
-      ) : (
-        <Image
-          src={media.src}
-          alt={media.alt}
-          width={500}
-          height={500}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          priority={media.isPriority}
-          loading={media.isPriority ? 'eager' : 'lazy'}
-        />
-      )}
-      {media.isVideo && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/30 text-white text-3xl opacity-0 group-hover:opacity-100 transition-opacity">
-            ▶️
-        </div>
-      )}
-    </div>
-  );
+    // --- Timer for Set B (Bottom-Left Image) ---
+    const intervalB = setInterval(() => {
+      setIndexB((prevIndex) => (prevIndex + 1) % imagesB.length);
+    }, IMAGE_CHANGE_INTERVAL_MS + (IMAGE_CHANGE_INTERVAL_MS / 2));
+
+    return () => {
+      clearInterval(intervalA);
+      clearInterval(intervalB);
+    };
+  }, [imagesA.length, imagesB.length]); // Length dependency ensures logic updates with new photo count
+
+  const currentMediaA = imagesA[indexA];
+  const currentMediaB = imagesB[indexB];
+
+  // Helper function to render a single image slot
+  const renderImageSlot = (media, position) => {
+    if (!media) return null;
+
+    const positionClasses = position === 'TR'
+      ? 'top-0 right-0'
+      : 'bottom-0 left-0';
+
+    const sizeClasses = 'w-1/2 h-1/2 md:w-2/3 md:h-2/3';
+
+    return (
+      <div
+        className={`absolute ${positionClasses} ${sizeClasses} overflow-hidden rounded-xl shadow-lg border-2 border-white/50 z-10`}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={media.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            transition={{ duration: FADE_DURATION_S, ease: "easeInOut" }}
+            className="w-full h-full"
+          >
+            {media.isVideo ? (
+              <video
+                src={media.src}
+                title={media.alt}
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={media.src}
+                alt={media.alt}
+                width={500}
+                height={500}
+                className="w-full h-full object-cover"
+                sizes="50vw"
+                loading="lazy"
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    );
+  };
 
   return (
-    <section
-      className="py-20 md:py-32 bg-gray-800 overflow-hidden"
-    >
-      <div className="max-w-6xl mx-auto px-4">
-        <h2 className="text-5xl font-dancing text-primary-pink text-center mb-12">
-          Our Favorite Moments
+    <div className="relative w-full aspect-square overflow-hidden rounded-2xl shadow-xl bg-gray-800 transition-all duration-300 hover:shadow-2xl hover:scale-[1.01] group">
+
+      {/* 1. Top-Left Text Slot (Year) - Adjacent to Top-Right Image */}
+      <div className="absolute top-0 left-0 w-1/2 h-1/2 md:w-1/3 md:h-1/3 flex items-center justify-center p-2 z-0">
+          <h3 className="text-5xl md:text-6xl font-mono text-primary-pink transition-transform duration-500 group-hover:scale-105 text-glow-pink">
+              {year}
+          </h3>
+      </div>
+
+      {/* 2. Bottom-Right Text Slot (Title) - Adjacent to Bottom-Left Image */}
+      <div className="absolute bottom-0 right-0 w-1/2 h-1/2 md:w-1/3 md:h-1/3 flex items-center justify-center p-2 z-0">
+          <p className="text-lg md:text-xl font-poppins text-secondary-gold transition-transform duration-500 group-hover:scale-105 text-glow-gold">
+              {title}
+          </p>
+      </div>
+
+      {/* 3. Dynamic Image Slots */}
+      {renderImageSlot(currentMediaA, 'TR')}
+      {renderImageSlot(currentMediaB, 'BL')}
+
+    </div>
+  );
+};
+
+// --- 4. MAIN IMAGE GALLERY COMPONENT ---
+export default function ImageGallery() {
+  return (
+    <section className="py-20 md:py-32 bg-gray-900 px-4">
+      <div className="max-w-6xl mx-auto">
+        <h2 className="text-5xl font-dancing text-primary-pink text-center mb-16">
+          A Journey Through Our Years
         </h2>
-      </div>
 
-      {/* Row 1: Left to Right Scroll */}
-      <div className="relative w-full whitespace-nowrap overflow-hidden my-4 group">
-        <motion.div
-          initial={{ x: 0 }} // Start position
-          animate={{ x: SCROLL_DISTANCE }} // Target position (scroll half the content)
-          transition={{
-            x: {
-              repeat: Infinity,
-              ease: "linear",
-              duration: SCROLL_DURATION_S
-            }
-          }}
-          className="inline-block"
-          style={{ width: `${TOTAL_CONTENT_WIDTH * 2}px` }} // Double the total content width
-        >
-          {scrollingRow1.map(renderMediaItem)}
-        </motion.div>
-
-        {/* Fading overlay to blend edges */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-gray-800 to-transparent via-transparent via-90% to-gray-800"></div>
-      </div>
-
-      {/* Row 2: Right to Left Scroll (Counter-Direction) */}
-      <div className="relative w-full whitespace-nowrap overflow-hidden my-4 group">
-        <motion.div
-          initial={{ x: SCROLL_DISTANCE }} // Start at the end position (for reverse scroll)
-          animate={{ x: 0 }} // Target position (back to the start)
-          transition={{
-            x: {
-              repeat: Infinity,
-              ease: "linear",
-              duration: SCROLL_DURATION_S
-            }
-          }}
-          className="inline-block"
-          style={{ width: `${TOTAL_CONTENT_WIDTH * 2}px` }}
-        >
-          {scrollingRow2.map(renderMediaItem)}
-        </motion.div>
-
-        {/* Fading overlay to blend edges */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-gray-800 to-transparent via-transparent via-90% to-gray-800"></div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          {yearGalleriesData.map((data) => (
+            <YearGallery
+              key={data.year}
+              year={data.year}
+              title={data.title}
+              imagesA={data.imagesA}
+              imagesB={data.imagesB}
+            />
+          ))}
+        </div>
       </div>
     </section>
   );

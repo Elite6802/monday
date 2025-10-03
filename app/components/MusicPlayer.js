@@ -4,11 +4,11 @@ import React, { useRef, useEffect, useState } from 'react';
 
 export default function MusicPlayer({ autoPlay = false }) {
 
-  const [isClient, setIsClient] = useState(false);
+const [isClient, setIsClient] = useState(false);
 
-  const [hasStarted, setHasStarted] = useState(false);
+const [hasStarted, setHasStarted] = useState(false);
 
-  const audioRef = useRef(null);
+const audioRef = useRef(null);
 
 
 
