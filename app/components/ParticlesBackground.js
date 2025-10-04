@@ -1,119 +1,90 @@
 'use client';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState, useEffect } from 'react';
 import Particles, { initParticlesEngine } from '@tsparticles/react';
+// Correct way to import the fireworks preset
 import { loadFireworksPreset } from '@tsparticles/preset-fireworks';
+
+// Load the necessary full library components for effects like trails, etc.
 import { loadFull } from 'tsparticles';
 
 const ParticlesBackground = ({ type = 'stars' }) => {
-  const particlesInit = useCallback(async (engine) => {
-    // loadFull is necessary to load all the plugins and presets
-    await loadFull(engine);
-    await loadFireworksPreset(engine);
-  }, []);
+  const [init, setInit] = useState(false);
 
-  const fireworksOptions = useMemo(() => ({
-    preset: 'fireworks',
-    background: {
-      opacity: 0, // Transparent background, we use the CSS gradient
-    },
-    fullScreen: {
-      enable: false, // Do not take up the full screen globally
-      zIndex: 1, // Place above the gradient, below the text
-    },
-    particles: {
-      move: {
-        enable: false,
-      },
-      life: {
-        count: 1,
-        duration: {
-          value: 0.5,
-        },
-      },
-    },
-    emitters: [
-        // Continuously emit small fireworks from the bottom
-        {
-            direction: "top",
-            life: {
-                count: 0,
-                duration: 0.5,
-                delay: 0.5
-            },
-            rate: {
-                delay: 0.1, // Fire every 0.1 seconds
-                quantity: 1
-            },
-            position: {
-                x: 50,
-                y: 100
-            },
-            particles: {
-                move: {
-                    direction: "top",
-                    enable: true,
-                    outModes: {
-                        top: "none",
-                        default: "destroy"
-                    },
-                    speed: 2,
-                    straight: true
-                },
-            }
-        },
-    ]
-  }), []);
+  // 1. Initialize the engine and load the preset once on component mount
+  useEffect(() => {
+    initParticlesEngine(async (engine) => {
+      // loadFull is necessary for all features/plugins
+      await loadFull(engine);
+      // CRITICAL: Load the fireworks preset
+      await loadFireworksPreset(engine);
+    }).then(() => {
+      setInit(true);
+    });
+  }, []);
 
-  const starsOptions = useMemo(() => ({
-    background: {
-      opacity: 0,
-    },
-    fullScreen: {
-      enable: false,
-    },
-    particles: {
-      number: {
-        value: 100,
-        density: {
-          enable: true,
-          value_area: 800,
-        },
-      },
-      color: {
-        value: ['#FFD700', '#FFFFFF', '#DDA0DD'], // Gold, White, Lavender
-      },
-      shape: {
-        type: 'star',
-      },
-      opacity: {
-        value: 0.8,
-        random: true,
-        anim: {
-          enable: true,
-          speed: 1,
-          opacity_min: 0.2,
-          sync: false,
-        },
-      },
-      size: {
-        value: 3,
-        random: true,
-      },
-      move: {
-        enable: true,
-        speed: 0.5,
-        direction: 'none',
-        random: true,
-        straight: false,
-        out_mode: 'out',
-        bounce: false,
-      },
-    },
-  }), []);
+  // 2. Fireworks Options: Simplified to rely on the built-in preset
+  const fireworksOptions = useMemo(() => ({
+    // Use the preset name directly
+    preset: 'fireworks',
+    background: {
+      color: {
+        value: "#000000", // Dark background for contrast
+      },
+      opacity: 0.1, // Slight opacity to show background gradient if used
+    },
+    fullScreen: {
+      enable: true, // Re-enable fullScreen for the fireworks effect to cover the hero section
+      zIndex: 1,
+    },
+    // Optional: You can still customize colors or speed here
+    particles: {
+      // The preset manages the firework launch and explosion
+    },
+    // Removed the manual 'emitters' setup, as the preset handles continuous firing
+  }), []);
 
-  const options = type === 'fireworks' ? fireworksOptions : starsOptions;
+  // 3. Stars Options (Kept for fallback)
+  const starsOptions = useMemo(() => ({
+    // ... (Stars configuration remains the same)
+    background: { opacity: 0 },
+    fullScreen: { enable: true, zIndex: 1 },
+    particles: {
+        number: { value: 100, density: { enable: true, value_area: 800 } },
+        color: { value: ['#FFD700', '#FFFFFF', '#DDA0DD'] },
+        shape: { type: 'star' },
+        opacity: {
+          value: 1.0, // Increased base opacity to 1.0 (fully opaque)
+          random: true,
+          anim: {
+            enable: true,
+            speed: 1,
+            opacity_min: 0.5, // Increased minimum fading opacity from 0.2 to 0.5
+            sync: false,
+          },
+        },
+        size: {
+          value: 4, // Increased max size from 3 to 4
+          random: true,
+        },
+        move: { enable: true, speed: 0.5, direction: 'none', random: true, straight: false, out_mode: 'out', bounce: false },
+    },
+  }), []);
 
-  return <Particles id="tsparticles" init={particlesInit} options={options} className='absolute inset-0 z-0' />;
+  const options = type === 'fireworks' ? fireworksOptions : starsOptions;
+
+  // Render only after initialization is complete
+  if (init) {
+    return (
+      <Particles
+        id="tsparticles"
+        options={options}
+        // Setting class names for correct layering on the page
+        className='absolute inset-0 z-0'
+      />
+    );
+  }
+
+  return null;
 };
 
 export default ParticlesBackground;
